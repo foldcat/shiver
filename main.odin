@@ -1,0 +1,7 @@
+package shiver
+
+import "core:fmt"
+
+main :: proc() {
+    fmt.println("test")
+}
