@@ -23,7 +23,7 @@ main :: proc() {
 	fmt.println(tokenizer)
 
 	for {
-		token := parser.next_token(tokenizer, allocator)
+		token: tokens.Token = parser.next_token(tokenizer, allocator)
 		if i, ok := token.(tokens.Eof); ok {
 			break
 		}

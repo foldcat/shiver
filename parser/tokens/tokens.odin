@@ -23,10 +23,19 @@ Return :: struct {}
 If :: struct {}
 Struct :: struct {}
 Comma :: struct {}
-Identifier :: string
+Identifier :: struct {
+	content: string, // distinct also works
+}
 
 // numebers
-Int_Literal :: i32 // TODO: consider
+Int_Literal :: struct {
+	content: i32,
+} // TODO: consider
+
+// strings
+String_Literal :: struct {
+	content: string,
+}
 
 Token :: union {
 	// operators
@@ -55,4 +64,7 @@ Token :: union {
 
 	// numbers
 	Int_Literal,
+
+	// strings
+	String_Literal,
 }

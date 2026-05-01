@@ -35,7 +35,5 @@ read_all :: proc(filepath: string, allocator := context.allocator) -> ^Tokenizer
 		inject_src(tokenizer, line)
 	}
 
-	free_all(context.temp_allocator)
-
 	return tokenizer
 }

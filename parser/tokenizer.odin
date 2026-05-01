@@ -41,6 +41,10 @@ advance :: proc(tokenizer: ^Tokenizer, n := 1) {
 	tokenizer.cursor += n
 }
 
+is_ident_char :: proc(r: rune) -> bool {
+	return unicode.is_alpha(r) || unicode.is_digit(r) || r == '_'
+}
+
 peek_next :: proc(tokenizer: ^Tokenizer) -> (result: rune, ok: bool) #optional_ok {
 	// sometimes throw and catch aint that bad honestly
 	// just thinking about bobbing the error makes me nauseous
@@ -56,6 +60,12 @@ peek_next :: proc(tokenizer: ^Tokenizer) -> (result: rune, ok: bool) #optional_o
 }
 
 
+cleanup_temp_alloc :: proc(result: tokens.Token) -> tokens.Token {
+	free_all(context.temp_allocator)
+	return result
+}
+
+@(deferred_out = cleanup_temp_alloc)
 next_token :: proc(tokenizer: ^Tokenizer, allocator: runtime.Allocator) -> tokens.Token {
 	skip_whitespace_and_comments(tokenizer)
 
@@ -100,12 +110,71 @@ next_token :: proc(tokenizer: ^Tokenizer, allocator: runtime.Allocator) -> token
 	case '}':
 		advance(tokenizer)
 		return tokens.Close_Bracket{}
+
+	// normal string literal
+	case '"':
+		advance(tokenizer) // consume the opening quote
+		b := strings.builder_make(context.temp_allocator)
+
+		for !is_at_end(tokenizer) && peek(tokenizer) != '"' {
+			c := peek(tokenizer)
+			if c == '\\' {
+				advance(tokenizer) // consume \
+				if is_at_end(tokenizer) {
+					panic("unterminated escape sequence") // TODO: proper error handling
+				}
+
+				escaped_char := peek(tokenizer)
+				switch escaped_char {
+				case 'n':
+					strings.write_rune(&b, '\n')
+				case 't':
+					strings.write_rune(&b, '\t')
+				case 'r':
+					strings.write_rune(&b, '\r')
+				case '\\':
+					strings.write_rune(&b, '\\')
+				case '"':
+					strings.write_rune(&b, '"')
+				case:
+					// dunno what escape sequence this is, treat as literal
+					strings.write_rune(&b, escaped_char)
+				}
+				advance(tokenizer)
+				continue
+			} else {
+				strings.write_rune(&b, c)
+				advance(tokenizer)
+			}
+		}
+
+		if is_at_end(tokenizer) {
+			panic("unclosed string literal") // TODO: proper error handling
+		}
+		advance(tokenizer)
+
+		return tokens.String_Literal{strings.clone(strings.to_string(b), allocator)}
+
+	case '`':
+		advance(tokenizer) // consume opening backtick
+		start := tokenizer.cursor
+
+		for !is_at_end(tokenizer) && peek(tokenizer) != '`' {
+			advance(tokenizer)
+		}
+
+		if is_at_end(tokenizer) do panic("unterminated raw string literal")
+
+		raw_slice := tokenizer.source[start:tokenizer.cursor]
+		advance(tokenizer) // consume closing backtick
+
+		temp_str := utf8.runes_to_string(raw_slice, context.temp_allocator)
+		return tokens.String_Literal{strings.clone(temp_str, allocator)}
 	}
 
-	if unicode.is_alpha(char) {
+	if unicode.is_alpha(char) || char == '_' {
 		start := tokenizer.cursor
-		for !is_at_end(tokenizer) &&
-		    (unicode.is_alpha(peek(tokenizer)) || unicode.is_digit(peek(tokenizer))) {
+		for !is_at_end(tokenizer) && is_ident_char(peek(tokenizer)) {
 			advance(tokenizer)
 		}
 
@@ -130,7 +199,7 @@ next_token :: proc(tokenizer: ^Tokenizer, allocator: runtime.Allocator) -> token
 			return tokens.Struct{}
 
 		case:
-			return tokens.Identifier(strings.clone(text, allocator))
+			return tokens.Identifier{strings.clone(text, allocator)}
 		}
 	}
 
@@ -149,7 +218,7 @@ next_token :: proc(tokenizer: ^Tokenizer, allocator: runtime.Allocator) -> token
 		if !ok {
 			panic("fail to parse int") // TODO: proper error handling
 		}
-		return tokens.Int_Literal(val)
+		return tokens.Int_Literal{cast(i32)val} // TODO: think about this
 	}
 
 	fmt.println("unexpected character:", char)
