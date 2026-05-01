@@ -16,7 +16,7 @@ read_all :: proc(filepath: string, allocator := context.allocator) -> ^Tokenizer
 	// i swear if they put more than 512 characters on singular line
 	// i will crash out
 	buffer: [512]byte
-	bufio.reader_init_with_buf(&r, os.stream_from_handle(f), buffer[:])
+	bufio.reader_init_with_buf(&r, os.to_stream(f), buffer[:])
 	defer bufio.reader_destroy(&r)
 
 	tokenizer := new_tokenizer(allocator)
