@@ -180,8 +180,6 @@ next_token :: proc(tokenizer: ^Tokenizer, allocator: runtime.Allocator) -> token
 
 		text_slice := tokenizer.source[start:tokenizer.cursor]
 
-		// Use the temp_allocator for the intermediate conversion!
-		// This way you don't have to manually 'delete' it at all.
 		text := utf8.runes_to_string(text_slice, context.temp_allocator)
 
 		switch text {
@@ -214,7 +212,6 @@ next_token :: proc(tokenizer: ^Tokenizer, allocator: runtime.Allocator) -> token
 
 		integer_str := utf8.runes_to_string(int_slice, context.temp_allocator)
 		val, ok := strconv.parse_int(integer_str)
-		delete(integer_str, context.temp_allocator)
 		if !ok {
 			panic("fail to parse int") // TODO: proper error handling
 		}
