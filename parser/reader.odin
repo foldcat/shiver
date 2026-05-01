@@ -2,9 +2,8 @@ package parser
 
 import "core:bufio"
 import "core:os"
-import "core:strings"
 
-read_file_by_lines_with_buffering :: proc(filepath: string) {
+read_all :: proc(filepath: string, allocator := context.allocator) -> ^Tokenizer {
 	// open the file
 	f, ferr := os.open(filepath)
 	if ferr != nil {
@@ -20,17 +19,23 @@ read_file_by_lines_with_buffering :: proc(filepath: string) {
 	bufio.reader_init_with_buf(&r, os.stream_from_handle(f), buffer[:])
 	defer bufio.reader_destroy(&r)
 
+	tokenizer := new_tokenizer(allocator)
+
 	// read every single line
 	for {
-		line, err := bufio.reader_read_string(&r, '\n', context.allocator)
+		line, err := bufio.reader_read_string(&r, '\n', context.temp_allocator)
 		if err != nil {
-      // end of it so we can break
+			// end of it so we can break
 			break
 		}
 		// cleanup
-		defer delete(line, context.allocator)
-		line = strings.trim_right(line, "\r")
+		defer delete(line, context.temp_allocator)
+		// line = strings.trim_right(line, "\r")
 
-		// process
+		inject_src(tokenizer, line)
 	}
+
+	free_all(context.temp_allocator)
+
+	return tokenizer
 }
