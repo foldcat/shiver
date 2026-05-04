@@ -96,7 +96,9 @@ next_token :: proc(tokenizer: ^Tokenizer, allocator: runtime.Allocator) -> token
 	case ',':
 		advance(tokenizer)
 		return tokens.Comma{}
-
+	case ';':
+		advance(tokenizer)
+		return tokens.Semi_Colon{}
 
 	case '(':
 		advance(tokenizer)
@@ -195,6 +197,16 @@ next_token :: proc(tokenizer: ^Tokenizer, allocator: runtime.Allocator) -> token
 			return tokens.If{}
 		case "struct":
 			return tokens.Struct{}
+		case "for":
+			return tokens.For{}
+		case "defer":
+			return tokens.Defer{}
+		case "in":
+			return tokens.In{}
+		case "break":
+			return tokens.Break{}
+		case "continue":
+			return tokens.Continue{}
 
 		case:
 			return tokens.Identifier{strings.clone(text, allocator)}

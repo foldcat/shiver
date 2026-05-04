@@ -7,6 +7,8 @@ Arrow :: struct {} // ->
 Caret :: struct {} // ^
 Ampersand :: struct {} // &
 Assign :: struct {} // =
+Comma :: struct {} // ,
+Semi_Colon :: struct {} // ;
 
 // brackets
 Open_Paren :: struct {} // (
@@ -22,7 +24,12 @@ Fn :: struct {}
 Return :: struct {}
 If :: struct {}
 Struct :: struct {}
-Comma :: struct {}
+For :: struct {}
+Defer :: struct {}
+In :: struct {}
+Break :: struct {}
+Continue :: struct {}
+
 Identifier :: struct {
 	content: string, // distinct also works
 }
@@ -45,6 +52,8 @@ Token :: union {
 	Caret,
 	Ampersand,
 	Assign,
+	Comma,
+	Semi_Colon,
 
 	// brackets
 	Open_Paren,
@@ -59,8 +68,12 @@ Token :: union {
 	Return,
 	If,
 	Struct,
-	Comma,
+	For,
 	Identifier,
+	Defer,
+	In,
+	Break,
+	Continue,
 
 	// numbers
 	Int_Literal,
